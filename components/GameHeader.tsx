@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 export default function GameHeader() {
   return (
     <View style={styles.header}>
-      <Text style={styles.title}>リズムマスター</Text>
+      <Text style={styles.title}>カスタネットマスター</Text>
       <Text style={styles.bpm}>BPM 180</Text>
     </View>
   );

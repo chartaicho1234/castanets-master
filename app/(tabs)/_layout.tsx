@@ -17,7 +17,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'リズムゲーム',
+          title: 'カスタネット',
           tabBarIcon: ({ size, color }) => (
             <Activity size={size} color={color} />
           ),
