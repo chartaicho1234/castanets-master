@@ -10,6 +10,8 @@ interface GameCompleteModalProps {
   maxLevels: number;
   results: TapResult[];
   level: GameLevel;
+  gameStartTime: number;
+  expectedBeatTimes: number[];
   onNextLevel: () => void;
   onRetry: () => void;
 }
@@ -21,6 +23,8 @@ export default function GameCompleteModal({
   maxLevels,
   results,
   level,
+  gameStartTime,
+  expectedBeatTimes,
   onNextLevel,
   onRetry,
 }: GameCompleteModalProps) {
@@ -81,7 +85,13 @@ export default function GameCompleteModal({
             </Text>
           </TouchableOpacity>
 
-          <TimingVisualization results={results} visible={showAnalysis} level={level} />
+          <TimingVisualization 
+            results={results} 
+            visible={showAnalysis} 
+            level={level}
+            gameStartTime={gameStartTime}
+            expectedBeatTimes={expectedBeatTimes}
+          />
         </ScrollView>
 
         {/* ボタンを下部に固定配置 */}

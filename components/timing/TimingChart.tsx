@@ -7,13 +7,15 @@ const { width } = Dimensions.get('window');
 interface TimingChartProps {
   results: TapResult[];
   level: GameLevel;
+  gameStartTime?: number;
+  expectedBeatTimes?: number[];
 }
 
-export default function TimingChart({ results, level }: TimingChartProps) {
+export default function TimingChart({ results, level, gameStartTime, expectedBeatTimes }: TimingChartProps) {
   // アクティブ拍のタップのみを使用（休符中のタップは除外）
   const activeTaps = results.filter(r => !r.isRestTap);
   
-  // 全拍パターンを生成
+  // 全拍パターンを生成（アクティブ拍と休符拍の配置）
   const totalBeats = level.segmentsPerSet * (level.activeBeatsPerSegment + level.restBeatsPerSegment);
   const beatPattern: ('active' | 'rest')[] = [];
   

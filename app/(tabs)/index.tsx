@@ -50,6 +50,8 @@ export default function RhythmGame() {
     countdown,
     calibrationResult,
     calibrationOffset,
+    gameStartTime,
+    expectedBeatTimes,
     startCalibration,
     startMetronomeOnly,
     startCountdown,
@@ -175,6 +177,8 @@ export default function RhythmGame() {
           maxLevels={LEVELS.length}
           results={results}
           level={level}
+          gameStartTime={gameStartTime}
+          expectedBeatTimes={expectedBeatTimes}
           onNextLevel={handleNextLevel}
           onRetry={handleRetry}
         />

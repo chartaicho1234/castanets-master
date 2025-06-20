@@ -10,9 +10,17 @@ interface TimingVisualizationProps {
   results: TapResult[];
   visible: boolean;
   level?: GameLevel;
+  gameStartTime?: number;
+  expectedBeatTimes?: number[];
 }
 
-export default function TimingVisualization({ results, visible, level }: TimingVisualizationProps) {
+export default function TimingVisualization({ 
+  results, 
+  visible, 
+  level, 
+  gameStartTime, 
+  expectedBeatTimes 
+}: TimingVisualizationProps) {
   if (!visible || results.length === 0) {
     return null;
   }
@@ -54,7 +62,12 @@ export default function TimingVisualization({ results, visible, level }: TimingV
         </View>
       </View>
 
-      <TimingChart results={results} level={level} />
+      <TimingChart 
+        results={results} 
+        level={level} 
+        gameStartTime={gameStartTime}
+        expectedBeatTimes={expectedBeatTimes}
+      />
       
       {/* 横軸の説明 */}
       <View style={styles.axisExplanation}>

@@ -510,6 +510,8 @@ export function useGameLogic({
     countdown,
     calibrationResult,
     calibrationOffset,
+    gameStartTime,
+    expectedBeatTimes,
     startCalibration,
     startMetronomeOnly,
     startCountdown,
