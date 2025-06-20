@@ -32,7 +32,7 @@ export default function TimingVisualization({ results, visible, level }: TimingV
     <View style={styles.container}>
       <Text style={styles.title}>タイミング分析（全{totalBeats}拍表示）</Text>
       <Text style={styles.subtitle}>
-        緑線: アクティブ拍 | 灰線: 休符拍 | 色付き点: 実際のタップ位置
+        青線: 期待タイミング | 点: 期待位置 | 色付き点: 実際のタップ位置 | 灰色背景: 休符拍
       </Text>
       
       <View style={styles.legend}>
@@ -55,6 +55,12 @@ export default function TimingVisualization({ results, visible, level }: TimingV
       </View>
 
       <TimingChart results={results} level={level} />
+      
+      {/* 横軸の説明 */}
+      <View style={styles.axisExplanation}>
+        <Text style={styles.axisText}>← 早すぎ　　　期待タイミング（青線上の点）　　　遅すぎ →</Text>
+      </View>
+      
       <TimingStats results={results} level={level} />
       <SegmentAnalysis results={results} level={level} />
       <TimingAdvice results={results} />
@@ -110,5 +116,17 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 11,
     color: '#ccc',
+  },
+  axisExplanation: {
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingVertical: 8,
+    backgroundColor: '#0f0f0f',
+    borderRadius: 8,
+  },
+  axisText: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
   },
 });

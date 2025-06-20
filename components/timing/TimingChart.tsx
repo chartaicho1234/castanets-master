@@ -71,48 +71,67 @@ export default function TimingChart({ results, level }: TimingChartProps) {
     }
   });
 
+  // 休符期間の背景を計算
+  const getRestPeriods = () => {
+    const periods: { start: number, end: number }[] = [];
+    let currentStart = -1;
+    
+    beatPattern.forEach((beatType, beatIndex) => {
+      if (beatType === 'rest' && currentStart === -1) {
+        currentStart = beatIndex;
+      } else if (beatType === 'active' && currentStart !== -1) {
+        periods.push({ start: currentStart, end: beatIndex - 1 });
+        currentStart = -1;
+      }
+    });
+    
+    // 最後が休符で終わる場合
+    if (currentStart !== -1) {
+      periods.push({ start: currentStart, end: beatPattern.length - 1 });
+    }
+    
+    return periods;
+  };
+
+  const restPeriods = getRestPeriods();
+
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartScrollContainer}>
       <View style={[styles.chart, { width: chartWidth }]}>
-        {/* 基準横線 */}
+        {/* 基準横線（期待タイミングライン） */}
         <View style={[styles.baselineLine, { top: chartHeight / 2 }]} />
         
-        {/* 全拍の縦線と許容範囲 */}
+        {/* 休符期間の背景 */}
+        {restPeriods.map((period, index) => {
+          const startX = getXPosition(period.start);
+          const endX = getXPosition(period.end);
+          
+          return (
+            <View key={`rest-period-${index}`} style={[styles.restPeriod, {
+              left: startX,
+              width: endX - startX + 20,
+              top: 20,
+              bottom: 20,
+            }]}>
+              <Text style={styles.restLabel}>休符</Text>
+            </View>
+          );
+        })}
+        
+        {/* 期待タイミングの点（横線上） */}
         {beatPattern.map((beatType, beatIndex) => {
           const x = getXPosition(beatIndex);
           const isActive = beatType === 'active';
           
           return (
-            <View key={`beat-${beatIndex}`}>
-              {/* 拍の縦線 */}
-              <View style={[styles.beatLine, {
-                left: x,
-                top: 20,
-                bottom: 20,
+            <View key={`expected-${beatIndex}`}>
+              {/* 期待タイミングの点 */}
+              <View style={[styles.expectedPoint, {
+                left: x - 4,
+                top: chartHeight / 2 - 4,
                 backgroundColor: isActive ? '#00ff88' : '#666',
-                opacity: isActive ? 0.8 : 0.4,
+                borderColor: isActive ? '#00ff88' : '#666',
               }]} />
-              
-              {/* アクティブ拍のみ許容範囲を表示 */}
-              {isActive && (
-                <>
-                  <View style={[styles.toleranceRange, {
-                    left: x - (50 / displayRange) * 20,
-                    width: (100 / displayRange) * 20,
-                    top: chartHeight / 2 - 15,
-                    height: 30,
-                    backgroundColor: 'rgba(255, 136, 0, 0.1)',
-                  }]} />
-                  
-                  <View style={[styles.toleranceRange, {
-                    left: x - (25 / displayRange) * 20,
-                    width: (50 / displayRange) * 20,
-                    top: chartHeight / 2 - 10,
-                    height: 20,
-                    backgroundColor: 'rgba(0, 255, 136, 0.2)',
-                  }]} />
-                </>
-              )}
               
               {/* 拍番号 */}
               <Text style={[styles.beatNumber, { 
@@ -126,20 +145,17 @@ export default function TimingChart({ results, level }: TimingChartProps) {
           );
         })}
         
-        {/* セグメント区切り線 */}
+        {/* セグメントラベル（上部に配置、縦線なし） */}
         {segmentBreaks.map((breakIndex, index) => {
           const x = getXPosition(breakIndex);
           
           return (
-            <View key={`segment-${index}`} style={[styles.segmentLine, { 
-              left: x,
-              top: 10,
-              bottom: 10,
+            <Text key={`segment-label-${index}`} style={[styles.segmentLabel, {
+              left: x - 30,
+              top: 5,
             }]}>
-              <Text style={styles.segmentLabel}>
-                セグメント {index + 2}
-              </Text>
-            </View>
+              セグメント {index + 2}
+            </Text>
           );
         })}
         
@@ -155,6 +171,7 @@ export default function TimingChart({ results, level }: TimingChartProps) {
           
           return (
             <View key={`tap-${tapIndex}`}>
+              {/* 期待位置から実際のタップ位置への横線 */}
               <View style={[styles.connectionLine, {
                 left: Math.min(baseX, actualX),
                 top: y - 1,
@@ -164,6 +181,7 @@ export default function TimingChart({ results, level }: TimingChartProps) {
                 opacity: 0.6,
               }]} />
               
+              {/* 実際のタップポイント */}
               <View style={[styles.tapPoint, {
                 left: actualX - 6,
                 top: y - 6,
@@ -171,6 +189,7 @@ export default function TimingChart({ results, level }: TimingChartProps) {
                 borderColor: getPointColor(result.timing),
               }]} />
               
+              {/* 偏差値表示 */}
               <Text style={[styles.deviationLabel, {
                 left: actualX - 20,
                 top: y + 15,
@@ -232,32 +251,35 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 70,
     right: 70,
-    height: 1,
-    backgroundColor: '#444',
-    opacity: 0.5,
+    height: 2,
+    backgroundColor: '#4488ff',
+    opacity: 0.8,
     zIndex: 1,
   },
-  beatLine: {
+  restPeriod: {
     position: 'absolute',
-    width: 2,
-    zIndex: 2,
-  },
-  toleranceRange: {
-    position: 'absolute',
-    borderRadius: 2,
+    backgroundColor: 'rgba(100, 100, 100, 0.2)',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 0,
   },
-  segmentLine: {
+  restLabel: {
+    fontSize: 10,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  expectedPoint: {
     position: 'absolute',
-    width: 3,
-    backgroundColor: '#ff8800',
-    opacity: 0.7,
-    zIndex: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#fff',
+    zIndex: 2,
   },
   segmentLabel: {
     position: 'absolute',
-    top: -25,
-    left: 5,
     fontSize: 10,
     color: '#ff8800',
     fontWeight: 'bold',
