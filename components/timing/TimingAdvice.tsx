@@ -15,19 +15,22 @@ export default function TimingAdvice({ results }: TimingAdviceProps) {
     <View style={styles.advice}>
       <Text style={styles.adviceTitle}>改善のヒント</Text>
       {activeTaps.filter(r => r.timing === 'early').length > activeTaps.length * 0.3 && (
-        <Text style={styles.adviceText}>• 早すぎる傾向があります（緑線の左側に偏り）。少し待ってからタップしてみましょう</Text>
+        <Text style={styles.adviceText}>• 早すぎる傾向があります（青線の左側に偏り）。少し待ってからタップしてみましょう</Text>
       )}
       {activeTaps.filter(r => r.timing === 'late').length > activeTaps.length * 0.3 && (
-        <Text style={styles.adviceText}>• 遅すぎる傾向があります（緑線の右側に偏り）。もう少し早めにタップしてみましょう</Text>
+        <Text style={styles.adviceText}>• 遅すぎる傾向があります（青線の右側に偏り）。もう少し早めにタップしてみましょう</Text>
       )}
       {maxDeviation > 100 && (
         <Text style={styles.adviceText}>• タイミングのばらつきが大きいです（横方向の散らばり）。一定のリズムを意識しましょう</Text>
       )}
       {restTaps.length > 0 && (
-        <Text style={styles.adviceText}>• 休符中にタップしています（灰色の線）。休符時は手を止めましょう</Text>
+        <Text style={styles.adviceText}>• 休符中にタップが検出されました。休符時は手を止めましょう（グラフには表示されません）</Text>
       )}
       {activeTaps.filter(r => r.timing === 'perfect' || r.timing === 'good').length > activeTaps.length * 0.8 && (
-        <Text style={styles.adviceText}>• 素晴らしい精度です！緑線に近い位置でタップできています</Text>
+        <Text style={styles.adviceText}>• 素晴らしい精度です！青線に近い位置でタップできています</Text>
+      )}
+      {activeTaps.length === 0 && (
+        <Text style={styles.adviceText}>• タップが記録されていません。アクティブ拍でのタップを心がけましょう</Text>
       )}
     </View>
   );

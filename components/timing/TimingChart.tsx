@@ -10,8 +10,8 @@ interface TimingChartProps {
 }
 
 export default function TimingChart({ results, level }: TimingChartProps) {
+  // アクティブ拍のタップのみを使用（休符中のタップは除外）
   const activeTaps = results.filter(r => !r.isRestTap);
-  const restTaps = results.filter(r => r.isRestTap);
   
   // 全拍パターンを生成
   const totalBeats = level.segmentsPerSet * (level.activeBeatsPerSegment + level.restBeatsPerSegment);
@@ -64,10 +64,11 @@ export default function TimingChart({ results, level }: TimingChartProps) {
 
   const segmentBreaks = getSegmentBreaks();
 
-  const activeBeatPositions: number[] = [];
+  // アクティブ拍のインデックスを取得
+  const activeBeatIndices: number[] = [];
   beatPattern.forEach((beatType, beatIndex) => {
     if (beatType === 'active') {
-      activeBeatPositions.push(beatIndex);
+      activeBeatIndices.push(beatIndex);
     }
   });
 
@@ -159,11 +160,15 @@ export default function TimingChart({ results, level }: TimingChartProps) {
           );
         })}
         
-        {/* 実際のタップ結果 */}
+        {/* 実際のタップ結果（アクティブ拍のみ） */}
         {activeTaps.map((result, tapIndex) => {
-          if (tapIndex >= activeBeatPositions.length) return null;
+          // タップインデックスがアクティブ拍の範囲内かチェック
+          if (tapIndex >= activeBeatIndices.length) {
+            console.warn(`タップインデックス ${tapIndex} がアクティブ拍の範囲外です`);
+            return null;
+          }
           
-          const beatIndex = activeBeatPositions[tapIndex];
+          const beatIndex = activeBeatIndices[tapIndex];
           const baseX = getXPosition(beatIndex);
           const deviationOffset = getDeviationOffset(result.deviation);
           const actualX = baseX + deviationOffset;
@@ -201,38 +206,7 @@ export default function TimingChart({ results, level }: TimingChartProps) {
           );
         })}
         
-        {/* 休符中のタップ表示 */}
-        {restTaps.map((result, restIndex) => {
-          const restBeatIndices = beatPattern
-            .map((type, index) => type === 'rest' ? index : -1)
-            .filter(index => index !== -1);
-          
-          if (restBeatIndices.length === 0) return null;
-          
-          const beatIndex = restBeatIndices[restIndex % restBeatIndices.length];
-          const x = getXPosition(beatIndex);
-          const y = chartHeight / 2;
-          
-          return (
-            <View key={`rest-tap-${restIndex}`}>
-              <View style={[styles.tapPoint, {
-                left: x - 6,
-                top: y - 6,
-                backgroundColor: '#ff4444',
-                borderColor: '#ff4444',
-                borderWidth: 3,
-              }]} />
-              
-              <Text style={[styles.deviationLabel, {
-                left: x - 20,
-                top: y + 15,
-                color: '#ff4444',
-              }]}>
-                休符中
-              </Text>
-            </View>
-          );
-        })}
+        {/* 休符拍は空白として表示（何も描画しない） */}
       </View>
     </ScrollView>
   );

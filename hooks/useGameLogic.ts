@@ -243,7 +243,7 @@ export function useGameLogic({
     const startTime = getHighPrecisionTime();
     setGameStartTime(startTime);
 
-    // アクティブ拍のみの期待時刻を事前計算
+    // アクティブ拍のみの期待時刻を事前計算（正確な対応関係を保つ）
     const expectedTimes: number[] = [];
     let timeOffset = 0;
     
@@ -258,6 +258,13 @@ export function useGameLogic({
     }
     
     setExpectedBeatTimes(expectedTimes);
+
+    console.log('ゲーム開始 - 期待時刻:', {
+      startTime,
+      totalActiveBeats: expectedTimes.length,
+      expectedActiveBeats: level.segmentsPerSet * level.activeBeatsPerSegment,
+      firstFewTimes: expectedTimes.slice(0, 5).map(t => Math.round(t - startTime))
+    });
 
     let segmentCount = 0;
     let beatInSegment = 0;
@@ -364,7 +371,7 @@ export function useGameLogic({
     soundFailureCounter.current = 0;
   }, [stopAll]);
 
-  // 改善されたタップ処理（onPressInで正確なタイミングを捉える）
+  // 改善されたタップ処理（休符中のタップは記録しない）
   const handleTap = useCallback(() => {
     if (gameState === 'calibration') {
       handleCalibrationTap();
@@ -381,20 +388,13 @@ export function useGameLogic({
     }
     lastTapTime.current = tapTime;
     
-    // 休符中のタップ検出
+    // 休符中のタップ検出（フィードバックのみ、記録はしない）
     if (isResting) {
       setLastFeedback('休符中です！');
       setTimeout(() => setLastFeedback(''), 1000);
       
-      const newResult: TapResult = { 
-        timing: 'missed', 
-        deviation: 0,
-        timestamp: tapTime,
-        targetTime: 0,
-        isRestTap: true
-      };
-      
-      setResults(prev => [...prev, newResult]);
+      // 休符中のタップは結果に記録しない（グラフに表示されない）
+      console.log('休符中のタップを検出（記録せず）');
       return;
     }
 
@@ -480,6 +480,15 @@ export function useGameLogic({
     setTotalTaps(prev => prev + 1);
     setLastFeedback(feedback);
 
+    console.log('アクティブタップ処理:', {
+      beatIndex: bestMatch.index,
+      deviation: Math.round(deviation),
+      timing,
+      targetTime: Math.round(targetTime),
+      tapTime: Math.round(tapTime),
+      totalResults: results.length + 1
+    });
+
     setTimeout(() => setLastFeedback(''), 1500);
 
     // タップボタンアニメーション
@@ -487,7 +496,7 @@ export function useGameLogic({
       withSpring(0.85, { duration: 100 }),
       withSpring(1, { duration: 200 })
     );
-  }, [gameState, isResting, expectedBeatTimes, calibrationOffset, tapButtonScale, getHighPrecisionTime, handleCalibrationTap, level, processedBeats]);
+  }, [gameState, isResting, expectedBeatTimes, calibrationOffset, tapButtonScale, getHighPrecisionTime, handleCalibrationTap, level, processedBeats, results.length]);
 
   return {
     gameState,
