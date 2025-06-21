@@ -42,7 +42,12 @@ export default function TapButton({
 
   const getButtonColor = () => {
     switch (gameState) {
-      case 'countdown': return countdown > 4 ? '#666' : '#ffaa00';
+      case 'countdown': 
+        if (countdown > 4) {
+          return '#666'; // 準備期間は暗いグレー
+        } else {
+          return '#ffaa00'; // アクティブなカウントダウンは明るいオレンジ
+        }
       case 'playing': return isResting ? '#666' : levelColor;
       case 'complete': return '#00ff88';
       case 'calibration': return '#4488ff';
@@ -91,17 +96,32 @@ export default function TapButton({
             borderColor: getButtonColor(),
             backgroundColor: gameState === 'countdown' || gameState === 'calibration' 
               ? `${getButtonColor()}20` 
-              : 'rgba(255, 255, 255, 0.05)'
+              : 'rgba(255, 255, 255, 0.05)',
+            // 準備期間中は少し透明度を下げる
+            opacity: gameState === 'countdown' && countdown > 4 ? 0.7 : 1.0
           }
         ]}>
-          <Text style={[styles.text, { color: getButtonColor() }]}>
+          <Text style={[
+            styles.text, 
+            { 
+              color: getButtonColor(),
+              // 準備期間中はテキストも少し暗く
+              opacity: gameState === 'countdown' && countdown > 4 ? 0.8 : 1.0
+            }
+          ]}>
             {getButtonText()}
           </Text>
         </Animated.View>
       </TouchableOpacity>
       
       {getDescription() && (
-        <Text style={styles.description}>
+        <Text style={[
+          styles.description,
+          {
+            // 準備期間とアクティブ期間で色を変える
+            color: gameState === 'countdown' && countdown > 4 ? '#666' : '#888'
+          }
+        ]}>
           {getDescription()}
         </Text>
       )}
@@ -135,7 +155,6 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: '#888',
     marginTop: 15,
     textAlign: 'center',
   },
