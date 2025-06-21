@@ -40,9 +40,8 @@ export default function TapButton({
       case 'paused': return 'ゲーム再開';
       case 'complete': return 'ゲーム完了';
       case 'calibration': 
-        // キャリブレーションの準備期間を考慮
-        const calibrationPreparationBeats = 3;
-        const totalCalibrationBeats = calibrationPreparationBeats + 8; // 準備3拍 + キャリブレーション8拍
+        // キャリブレーションの準備期間を4拍に変更
+        const calibrationPreparationBeats = 4;
         
         if (countdown > 8) {
           // 準備期間中
@@ -93,7 +92,7 @@ export default function TapButton({
         }
       case 'calibration': 
         if (countdown > 8) {
-          return '3拍無音の後、メトロノーム音が鳴り始めます';
+          return '4拍無音の後、メトロノーム音が鳴り始めます';
         } else {
           return 'メトロノームに合わせて正確にタップしてください';
         }

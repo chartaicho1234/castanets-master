@@ -58,14 +58,14 @@ export function useGameLogic({
     return performance.now();
   }, []);
 
-  // キャリブレーション開始（準備時間付き）
+  // キャリブレーション開始（準備時間を4拍に変更）
   const startCalibration = useCallback(() => {
-    console.log('🎯 キャリブレーション開始（準備時間付き）');
+    console.log('🎯 キャリブレーション開始（準備時間4拍）');
     setGameState('calibration');
     setCalibrationTaps([]);
     
-    // 準備時間: 3秒（3拍分）
-    const preparationBeats = 3;
+    // 準備時間: 4拍（4秒）に変更
+    const preparationBeats = 4;
     const totalBeats = preparationBeats + CALIBRATION_TAPS;
     let currentBeat = 0;
     
@@ -132,6 +132,12 @@ export function useGameLogic({
         metronomeTimer.current = setTimeout(calibrationTick, level.noteLength);
       } else {
         console.log('🎯 キャリブレーション完了 - 音声終了');
+        // 8拍すべて完了したら自動的に結果を計算
+        if (calibrationTaps.length < CALIBRATION_TAPS) {
+          console.log('⚠️ キャリブレーション不完全 - タップ数不足');
+          setLastFeedback(`キャリブレーション失敗: ${calibrationTaps.length}/${CALIBRATION_TAPS}回のタップ`);
+          setTimeout(() => setLastFeedback(''), 3000);
+        }
         setGameState('idle');
       }
     };
@@ -147,7 +153,7 @@ export function useGameLogic({
     }
     
     // 準備期間中のタップは無視
-    const preparationBeats = 3;
+    const preparationBeats = 4; // 4拍に変更
     const totalBeats = preparationBeats + CALIBRATION_TAPS;
     const currentPhase = totalBeats - countdown + 1;
     
