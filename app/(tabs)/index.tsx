@@ -208,5 +208,4 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     gap: 15,
   },
-  
 });
