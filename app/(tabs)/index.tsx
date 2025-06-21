@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-// Hooksss
+// Hooks
 import { useAudio } from '@/hooks/useAudio';
 import { useGameLogic } from '@/hooks/useGameLogic';
 
