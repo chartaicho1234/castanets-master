@@ -157,18 +157,18 @@ export function useGameLogic({
     tick();
   }, [gameState, playMetronomeBeep, beatIndicatorScale, beatIndicatorOpacity, level.noteLength]);
 
-  // カウントダウン開始（1小節無音 + 1小節カウントダウン + 1まで数え切る）
+  // カウントダウン開始（準備期間 + カウントダウン期間）
   const startCountdown = useCallback(() => {
     setGameState('countdown');
     
-    // 1小節分の無音期間 + 1小節分のカウントダウン
-    const silentBeats = level.countdownBeats;
+    // 準備期間とカウントダウン期間を同じ拍数に設定
+    const preparationBeats = level.countdownBeats; // 8分拍は8拍、16分拍は16拍
     const countdownBeats = level.countdownBeats;
-    let totalBeats = silentBeats + countdownBeats;
+    let totalBeats = preparationBeats + countdownBeats;
     let currentBeat = 0;
     
     console.log('カウントダウン開始:', {
-      silentBeats,
+      preparationBeats,
       countdownBeats,
       totalBeats,
       noteLength: level.noteLength
@@ -179,17 +179,17 @@ export function useGameLogic({
       console.log('カウントダウンティック:', {
         currentBeat,
         totalBeats,
-        phase: currentBeat <= silentBeats ? 'silent' : 'countdown'
+        phase: currentBeat <= preparationBeats ? 'preparation' : 'countdown'
       });
       
-      if (currentBeat <= silentBeats) {
-        // 無音期間（1小節目）
+      if (currentBeat <= preparationBeats) {
+        // 準備期間（無音）
         const remainingTotal = totalBeats - currentBeat + 1;
         setCountdown(remainingTotal);
-        console.log('無音期間:', { currentBeat, remainingTotal });
+        console.log('準備期間:', { currentBeat, remainingTotal });
       } else if (currentBeat <= totalBeats) {
-        // カウントダウン期間（2小節目）
-        const countdownBeat = currentBeat - silentBeats;
+        // カウントダウン期間（音あり）
+        const countdownBeat = currentBeat - preparationBeats;
         const remainingBeats = countdownBeats - countdownBeat + 1;
         
         console.log('カウントダウン期間:', { 

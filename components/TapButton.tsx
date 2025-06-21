@@ -27,8 +27,12 @@ export default function TapButton({
       case 'idle': return 'ゲーム開始';
       case 'metronome': return 'メトロノーム停止';
       case 'countdown': 
-        if (countdown > 4) {
-          return `準備中...\n${countdown - 4}拍後にカウント開始`;
+        // 4分拍は4、8分拍は8、16分拍は16の準備期間
+        const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                levelCountdownText === '8ビート！' ? 8 : 16;
+        
+        if (countdown > preparationBeats) {
+          return `準備中...\n${countdown - preparationBeats}拍後にカウント開始`;
         } else {
           return `カウント: ${countdown}\n${levelCountdownText}`;
         }
@@ -43,7 +47,11 @@ export default function TapButton({
   const getButtonColor = () => {
     switch (gameState) {
       case 'countdown': 
-        if (countdown > 4) {
+        // 4分拍は4、8分拍は8、16分拍は16の準備期間
+        const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                levelCountdownText === '8ビート！' ? 8 : 16;
+        
+        if (countdown > preparationBeats) {
           return '#666'; // 準備期間は暗いグレー
         } else {
           return '#ffaa00'; // アクティブなカウントダウンは明るいオレンジ
@@ -58,8 +66,12 @@ export default function TapButton({
   const getDescription = () => {
     switch (gameState) {
       case 'countdown': 
-        if (countdown > 4) {
-          return '1小節無音の後、カウントダウンが始まります';
+        // 4分拍は4、8分拍は8、16分拍は16の準備期間
+        const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                levelCountdownText === '8ビート！' ? 8 : 16;
+        
+        if (countdown > preparationBeats) {
+          return `${preparationBeats}拍無音の後、カウントダウンが始まります`;
         } else {
           return `${levelCountdownText}のカウントダウン中（1まで数えます）`;
         }
@@ -98,7 +110,11 @@ export default function TapButton({
               ? `${getButtonColor()}20` 
               : 'rgba(255, 255, 255, 0.05)',
             // 準備期間中は少し透明度を下げる
-            opacity: gameState === 'countdown' && countdown > 4 ? 0.7 : 1.0
+            opacity: gameState === 'countdown' && (() => {
+              const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                      levelCountdownText === '8ビート！' ? 8 : 16;
+              return countdown > preparationBeats ? 0.7 : 1.0;
+            })()
           }
         ]}>
           <Text style={[
@@ -106,7 +122,11 @@ export default function TapButton({
             { 
               color: getButtonColor(),
               // 準備期間中はテキストも少し暗く
-              opacity: gameState === 'countdown' && countdown > 4 ? 0.8 : 1.0
+              opacity: gameState === 'countdown' && (() => {
+                const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                        levelCountdownText === '8ビート！' ? 8 : 16;
+                return countdown > preparationBeats ? 0.8 : 1.0;
+              })()
             }
           ]}>
             {getButtonText()}
@@ -119,7 +139,11 @@ export default function TapButton({
           styles.description,
           {
             // 準備期間とアクティブ期間で色を変える
-            color: gameState === 'countdown' && countdown > 4 ? '#666' : '#888'
+            color: gameState === 'countdown' && (() => {
+              const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                      levelCountdownText === '8ビート！' ? 8 : 16;
+              return countdown > preparationBeats ? '#666' : '#888';
+            })()
           }
         ]}>
           {getDescription()}
