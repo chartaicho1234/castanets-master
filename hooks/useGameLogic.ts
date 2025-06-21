@@ -38,6 +38,7 @@ export function useGameLogic({
   const [calibrationOffset, setCalibrationOffset] = useState(0);
   const [calibrationTaps, setCalibrationTaps] = useState<number[]>([]);
   const [calibrationResult, setCalibrationResult] = useState<CalibrationResult | null>(null);
+  const [calibrationStartTime, setCalibrationStartTime] = useState(0);
 
   // Timers
   const metronomeTimer = useRef<NodeJS.Timeout | null>(null);
@@ -59,19 +60,29 @@ export function useGameLogic({
 
   // キャリブレーション開始
   const startCalibration = useCallback(() => {
+    console.log('🎯 キャリブレーション開始');
     setGameState('calibration');
     setCalibrationTaps([]);
     setCountdown(CALIBRATION_TAPS);
     
-    const calibrationStartTime = getHighPrecisionTime();
+    const startTime = getHighPrecisionTime();
+    setCalibrationStartTime(startTime);
     let beatCount = 0;
+    
+    console.log('キャリブレーション設定:', {
+      startTime,
+      totalTaps: CALIBRATION_TAPS,
+      noteLength: level.noteLength
+    });
     
     const calibrationTick = () => {
       if (beatCount >= CALIBRATION_TAPS) {
+        console.log('🎯 キャリブレーション完了 - 音声終了');
         setGameState('idle');
         return;
       }
       
+      console.log(`🎵 キャリブレーション拍 ${beatCount + 1}/${CALIBRATION_TAPS}`);
       playMetronomeBeep(true, beatCount % 4 === 0);
       
       runOnJS(() => {
@@ -96,16 +107,28 @@ export function useGameLogic({
 
   // キャリブレーション用タップ処理
   const handleCalibrationTap = useCallback(() => {
-    if (gameState !== 'calibration') return;
+    if (gameState !== 'calibration') {
+      console.log('⚠️ キャリブレーション状態ではありません:', gameState);
+      return;
+    }
     
     const tapTime = getHighPrecisionTime();
     const newTaps = [...calibrationTaps, tapTime];
     setCalibrationTaps(newTaps);
     
+    console.log(`👆 キャリブレーションタップ ${newTaps.length}/${CALIBRATION_TAPS}:`, {
+      tapTime: Math.round(tapTime),
+      relativeTime: Math.round(tapTime - calibrationStartTime)
+    });
+    
     if (newTaps.length >= CALIBRATION_TAPS) {
-      const gameStartTime = getHighPrecisionTime() - (CALIBRATION_TAPS - 1) * level.noteLength;
+      // キャリブレーション結果を計算
+      const expectedTimes = newTaps.map((_, index) => 
+        calibrationStartTime + index * level.noteLength
+      );
+      
       const offsets = newTaps.map((tapTime, index) => {
-        const expectedTime = gameStartTime + index * level.noteLength;
+        const expectedTime = expectedTimes[index];
         return tapTime - expectedTime;
       });
       
@@ -119,6 +142,14 @@ export function useGameLogic({
         tapCount: CALIBRATION_TAPS,
       };
       
+      console.log('📊 キャリブレーション結果:', {
+        averageOffset: Math.round(averageOffset),
+        standardDeviation: Math.round(standardDeviation),
+        offsets: offsets.map(o => Math.round(o)),
+        expectedTimes: expectedTimes.map(t => Math.round(t - calibrationStartTime)),
+        actualTimes: newTaps.map(t => Math.round(t - calibrationStartTime))
+      });
+      
       setCalibrationOffset(averageOffset);
       setCalibrationResult(result);
       setGameState('idle');
@@ -126,7 +157,7 @@ export function useGameLogic({
       setLastFeedback(`キャリブレーション完了: ${Math.round(averageOffset)}ms`);
       setTimeout(() => setLastFeedback(''), 3000);
     }
-  }, [gameState, calibrationTaps, level.noteLength, getHighPrecisionTime]);
+  }, [gameState, calibrationTaps, level.noteLength, getHighPrecisionTime, calibrationStartTime]);
 
   // メトロノーム開始（♪ボタン用）
   const startMetronomeOnly = useCallback(() => {
@@ -161,8 +192,7 @@ export function useGameLogic({
   const startCountdown = useCallback(() => {
     setGameState('countdown');
     
-    // 準備期間とカウントダウン期間を同じ拍数に設定
-    const preparationBeats = level.countdownBeats; // 8分拍は8拍、16分拍は16拍
+    const preparationBeats = level.countdownBeats;
     const countdownBeats = level.countdownBeats;
     let totalBeats = preparationBeats + countdownBeats;
     let currentBeat = 0;
@@ -176,32 +206,19 @@ export function useGameLogic({
     
     const countdownTick = () => {
       currentBeat++;
-      console.log('カウントダウンティック:', {
-        currentBeat,
-        totalBeats,
-        phase: currentBeat <= preparationBeats ? 'preparation' : 'countdown'
-      });
       
       if (currentBeat <= preparationBeats) {
         // 準備期間（無音）
         const remainingTotal = totalBeats - currentBeat + 1;
         setCountdown(remainingTotal);
-        console.log('準備期間:', { currentBeat, remainingTotal });
       } else if (currentBeat <= totalBeats) {
         // カウントダウン期間（音あり）
         const countdownBeat = currentBeat - preparationBeats;
         const remainingBeats = countdownBeats - countdownBeat + 1;
         
-        console.log('カウントダウン期間:', { 
-          countdownBeat, 
-          remainingBeats,
-          isFirstBeat: countdownBeat === 1 
-        });
-        
         playMetronomeBeep(true, countdownBeat === 1);
         setCountdown(remainingBeats);
         
-        // タップボタンのお手本アニメーション
         runOnJS(() => {
           tapButtonScale.value = withSequence(
             withSpring(1.2, { duration: 150 }),
@@ -213,15 +230,12 @@ export function useGameLogic({
       if (currentBeat < totalBeats) {
         countdownTimer.current = setTimeout(countdownTick, level.noteLength);
       } else {
-        // カウントダウン完全終了、ゲーム開始
-        console.log('カウントダウン完了、ゲーム開始');
         setTimeout(() => {
           startActualGame();
-        }, level.noteLength); // 最後の1拍の後にゲーム開始
+        }, level.noteLength);
       }
     };
 
-    // 最初のティックを即座に開始
     countdownTick();
   }, [playMetronomeBeep, tapButtonScale, level.noteLength, level.countdownBeats]);
 
@@ -243,17 +257,15 @@ export function useGameLogic({
     const startTime = getHighPrecisionTime();
     setGameStartTime(startTime);
 
-    // アクティブ拍のみの期待時刻を事前計算（正確な対応関係を保つ）
+    // アクティブ拍のみの期待時刻を事前計算
     const expectedTimes: number[] = [];
     let timeOffset = 0;
     
     for (let segment = 0; segment < level.segmentsPerSet; segment++) {
-      // アクティブな拍の期待時刻を計算
       for (let beat = 0; beat < level.activeBeatsPerSegment; beat++) {
         expectedTimes.push(startTime + timeOffset);
         timeOffset += level.noteLength;
       }
-      // 休符の時間をスキップ
       timeOffset += level.restBeatsPerSegment * level.noteLength;
     }
     
@@ -263,7 +275,8 @@ export function useGameLogic({
       startTime,
       totalActiveBeats: expectedTimes.length,
       expectedActiveBeats: level.segmentsPerSet * level.activeBeatsPerSegment,
-      firstFewTimes: expectedTimes.slice(0, 5).map(t => Math.round(t - startTime))
+      firstFewTimes: expectedTimes.slice(0, 5).map(t => Math.round(t - startTime)),
+      calibrationOffset
     });
 
     let segmentCount = 0;
@@ -279,7 +292,6 @@ export function useGameLogic({
       }
 
       if (isInRest) {
-        // 休符中
         restBeatCount++;
         setIsResting(true);
         setCurrentSet(segmentCount);
@@ -301,7 +313,6 @@ export function useGameLogic({
           beatInSegment = 0;
         }
       } else {
-        // 演奏中
         setIsResting(false);
         setCurrentSet(segmentCount);
         setCurrentBeat(beatInSegment + 1);
@@ -321,7 +332,6 @@ export function useGameLogic({
         }
       }
 
-      // ビートインジケーターアニメーション
       runOnJS(() => {
         beatIndicatorScale.value = withSequence(
           withSpring(1.3, { duration: 100 }),
@@ -337,7 +347,7 @@ export function useGameLogic({
     };
 
     nextBeat();
-  }, [level, playMetronomeBeep, beatIndicatorScale, beatIndicatorOpacity, getHighPrecisionTime]);
+  }, [level, playMetronomeBeep, beatIndicatorScale, beatIndicatorOpacity, getHighPrecisionTime, calibrationOffset]);
 
   // 全停止
   const stopAll = useCallback(() => {
@@ -393,7 +403,6 @@ export function useGameLogic({
       setLastFeedback('休符中です！');
       setTimeout(() => setLastFeedback(''), 1000);
       
-      // 休符中のタップを記録
       const newResult: TapResult = { 
         timing: 'missed', 
         deviation: 0,
@@ -414,7 +423,6 @@ export function useGameLogic({
     // レベルに応じた動的な判定基準を取得
     const { perfectTolerance, goodTolerance } = getAdjustedTolerances(level.noteLength);
     
-    // より精密なタップ判定ロジック
     const searchWindow = Math.max(level.noteLength * 0.8, goodTolerance * 1.5);
     
     let bestMatch = {
@@ -451,7 +459,8 @@ export function useGameLogic({
     setProcessedBeats(prev => new Set([...prev, bestMatch.index]));
     
     const targetTime = bestMatch.targetTime;
-    const deviation = tapTime - targetTime - calibrationOffset;
+    const rawDeviation = tapTime - targetTime;
+    const deviation = rawDeviation - calibrationOffset; // キャリブレーション補正を適用
     const absDeviation = Math.abs(deviation);
 
     let timing: TapResult['timing'] = 'missed';
@@ -490,10 +499,13 @@ export function useGameLogic({
     setTotalTaps(prev => prev + 1);
     setLastFeedback(feedback);
 
-    console.log('アクティブタップ処理:', {
+    console.log('🎯 アクティブタップ処理:', {
       beatIndex: bestMatch.index,
-      deviation: Math.round(deviation),
+      rawDeviation: Math.round(rawDeviation),
+      calibrationOffset: Math.round(calibrationOffset),
+      finalDeviation: Math.round(deviation),
       timing,
+      points,
       targetTime: Math.round(targetTime),
       tapTime: Math.round(tapTime),
       totalResults: results.length + 1
@@ -501,7 +513,6 @@ export function useGameLogic({
 
     setTimeout(() => setLastFeedback(''), 1500);
 
-    // タップボタンアニメーション
     tapButtonScale.value = withSequence(
       withSpring(0.85, { duration: 100 }),
       withSpring(1, { duration: 200 })

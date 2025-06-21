@@ -33,12 +33,18 @@ export default function CalibrationDisplay({
 
   const status = getCalibrationStatus();
 
+  // デバッグ情報の表示（開発時のみ）
+  const showDebugInfo = true; // 本番では false に設定
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>タイミング補正</Text>
         <TouchableOpacity
-          style={styles.calibrateButton}
+          style={[
+            styles.calibrateButton,
+            gameState === 'calibration' && styles.calibrateButtonActive
+          ]}
           onPress={onStartCalibration}
           disabled={gameState !== 'idle'}
         >
@@ -76,8 +82,34 @@ export default function CalibrationDisplay({
       
       {gameState === 'calibration' && (
         <Text style={styles.instruction}>
-          メトロノームに合わせてタップしてください
+          メトロノームに合わせて8回正確にタップしてください
         </Text>
+      )}
+
+      {/* デバッグ情報 */}
+      {showDebugInfo && (
+        <View style={styles.debugContainer}>
+          <Text style={styles.debugTitle}>🔧 デバッグ情報</Text>
+          <Text style={styles.debugText}>
+            ゲーム状態: {gameState}
+          </Text>
+          <Text style={styles.debugText}>
+            補正値: {calibrationOffset.toFixed(2)}ms
+          </Text>
+          {calibrationResult && (
+            <>
+              <Text style={styles.debugText}>
+                平均偏差: {calibrationResult.averageOffset.toFixed(2)}ms
+              </Text>
+              <Text style={styles.debugText}>
+                標準偏差: {calibrationResult.standardDeviation.toFixed(2)}ms
+              </Text>
+              <Text style={styles.debugText}>
+                タップ数: {calibrationResult.tapCount}
+              </Text>
+            </>
+          )}
+        </View>
       )}
     </View>
   );
@@ -112,6 +144,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     gap: 6,
   },
+  calibrateButtonActive: {
+    backgroundColor: '#4488ff',
+  },
   calibrateText: {
     fontSize: 12,
     color: '#fff',
@@ -140,5 +175,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     fontStyle: 'italic',
+  },
+  debugContainer: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#0f0f0f',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#ff8800',
+    marginBottom: 5,
+  },
+  debugText: {
+    fontSize: 11,
+    color: '#ccc',
+    marginBottom: 2,
   },
 });
