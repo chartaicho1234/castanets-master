@@ -7,24 +7,32 @@ const { width } = Dimensions.get('window');
 interface TimingChartProps {
   results: TapResult[];
   level: GameLevel;
-  gameStartTime?: number;
-  expectedBeatTimes?: number[];
+  gameStartTime: number;
+  expectedBeatTimes: number[];
 }
 
 export default function TimingChart({ results, level, gameStartTime, expectedBeatTimes }: TimingChartProps) {
   // アクティブ拍のタップのみを使用（休符中のタップは除外）
   const activeTaps = results.filter(r => !r.isRestTap);
   
-  // 全拍パターンを生成（アクティブ拍と休符拍の配置）
+  // 0秒から始まる完全なタイムラインを生成
   const totalBeats = level.segmentsPerSet * (level.activeBeatsPerSegment + level.restBeatsPerSegment);
   const beatPattern: ('active' | 'rest')[] = [];
+  const allBeatTimes: number[] = [];
   
+  // 全拍の時刻を計算（0秒から開始）
   for (let segment = 0; segment < level.segmentsPerSet; segment++) {
+    // アクティブ拍
     for (let i = 0; i < level.activeBeatsPerSegment; i++) {
       beatPattern.push('active');
+      const beatIndex = segment * (level.activeBeatsPerSegment + level.restBeatsPerSegment) + i;
+      allBeatTimes.push(gameStartTime + beatIndex * level.noteLength);
     }
+    // 休符拍
     for (let i = 0; i < level.restBeatsPerSegment; i++) {
       beatPattern.push('rest');
+      const beatIndex = segment * (level.activeBeatsPerSegment + level.restBeatsPerSegment) + level.activeBeatsPerSegment + i;
+      allBeatTimes.push(gameStartTime + beatIndex * level.noteLength);
     }
   }
 
@@ -66,14 +74,6 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
 
   const segmentBreaks = getSegmentBreaks();
 
-  // アクティブ拍のインデックスを取得
-  const activeBeatIndices: number[] = [];
-  beatPattern.forEach((beatType, beatIndex) => {
-    if (beatType === 'active') {
-      activeBeatIndices.push(beatIndex);
-    }
-  });
-
   // 休符期間の背景を計算
   const getRestPeriods = () => {
     const periods: { start: number, end: number }[] = [];
@@ -98,6 +98,24 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
 
   const restPeriods = getRestPeriods();
 
+  // アクティブ拍のインデックスマッピングを作成
+  const activeBeatIndices: number[] = [];
+  beatPattern.forEach((beatType, beatIndex) => {
+    if (beatType === 'active') {
+      activeBeatIndices.push(beatIndex);
+    }
+  });
+
+  console.log('TimingChart Debug:', {
+    totalBeats,
+    activeBeatIndices: activeBeatIndices.slice(0, 10),
+    activeTapsCount: activeTaps.length,
+    expectedBeatTimesCount: expectedBeatTimes.length,
+    beatPattern: beatPattern.slice(0, 16),
+    gameStartTime,
+    firstFewExpectedTimes: expectedBeatTimes.slice(0, 5).map(t => Math.round(t - gameStartTime))
+  });
+
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartScrollContainer}>
       <View style={[styles.chart, { width: chartWidth }]}>
@@ -121,7 +139,7 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
           );
         })}
         
-        {/* 期待タイミングの点（横線上） */}
+        {/* 全拍の期待タイミング点（横線上） */}
         {beatPattern.map((beatType, beatIndex) => {
           const x = getXPosition(beatIndex);
           const isActive = beatType === 'active';
@@ -136,19 +154,21 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
                 borderColor: isActive ? '#00ff88' : '#666',
               }]} />
               
-              {/* 拍番号 */}
-              <Text style={[styles.beatNumber, { 
-                left: x - 8,
-                bottom: 5,
-                color: isActive ? '#00ff88' : '#666',
-              }]}>
-                {beatIndex + 1}
-              </Text>
+              {/* 拍番号（5拍ごとに表示） */}
+              {(beatIndex + 1) % 5 === 0 && (
+                <Text style={[styles.beatNumber, { 
+                  left: x - 8,
+                  bottom: 5,
+                  color: isActive ? '#00ff88' : '#666',
+                }]}>
+                  {beatIndex + 1}
+                </Text>
+              )}
             </View>
           );
         })}
         
-        {/* セグメントラベル（上部に配置、縦線なし） */}
+        {/* セグメントラベル（上部に配置） */}
         {segmentBreaks.map((breakIndex, index) => {
           const x = getXPosition(breakIndex);
           
@@ -166,7 +186,7 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
         {activeTaps.map((result, tapIndex) => {
           // タップインデックスがアクティブ拍の範囲内かチェック
           if (tapIndex >= activeBeatIndices.length) {
-            console.warn(`タップインデックス ${tapIndex} がアクティブ拍の範囲外です`);
+            console.warn(`タップインデックス ${tapIndex} がアクティブ拍の範囲外です (最大: ${activeBeatIndices.length - 1})`);
             return null;
           }
           
@@ -196,19 +216,37 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
                 borderColor: getPointColor(result.timing),
               }]} />
               
-              {/* 偏差値表示 */}
-              <Text style={[styles.deviationLabel, {
-                left: actualX - 20,
-                top: y + 15,
-                color: getPointColor(result.timing),
-              }]}>
-                {result.deviation > 0 ? '+' : ''}{Math.round(result.deviation)}ms
-              </Text>
+              {/* 偏差値表示（大きな偏差のみ） */}
+              {Math.abs(result.deviation) > 30 && (
+                <Text style={[styles.deviationLabel, {
+                  left: actualX - 20,
+                  top: y + 15,
+                  color: getPointColor(result.timing),
+                }]}>
+                  {result.deviation > 0 ? '+' : ''}{Math.round(result.deviation)}ms
+                </Text>
+              )}
             </View>
           );
         })}
         
-        {/* 休符拍は空白として表示（何も描画しない） */}
+        {/* 時間軸ラベル（秒表示） */}
+        {Array.from({ length: Math.ceil(totalBeats / 4) }, (_, index) => {
+          const beatIndex = index * 4;
+          if (beatIndex >= totalBeats) return null;
+          
+          const x = getXPosition(beatIndex);
+          const timeInSeconds = (beatIndex * level.noteLength) / 1000;
+          
+          return (
+            <Text key={`time-${index}`} style={[styles.timeLabel, {
+              left: x - 15,
+              top: chartHeight - 15,
+            }]}>
+              {timeInSeconds.toFixed(1)}s
+            </Text>
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -266,6 +304,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: 16,
     fontWeight: 'bold',
+  },
+  timeLabel: {
+    position: 'absolute',
+    fontSize: 9,
+    color: '#666',
+    textAlign: 'center',
+    width: 30,
   },
   connectionLine: {
     position: 'absolute',

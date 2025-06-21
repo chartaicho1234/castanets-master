@@ -25,11 +25,11 @@ export default function TimingVisualization({
     return null;
   }
 
-  if (!level) {
+  if (!level || !gameStartTime || !expectedBeatTimes) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>タイミング分析</Text>
-        <Text style={styles.noDataText}>レベル情報が不足しています</Text>
+        <Text style={styles.noDataText}>分析に必要な情報が不足しています</Text>
       </View>
     );
   }
@@ -38,9 +38,9 @@ export default function TimingVisualization({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>タイミング分析（全{totalBeats}拍表示）</Text>
+      <Text style={styles.title}>タイミング分析（0秒からの完全タイムライン）</Text>
       <Text style={styles.subtitle}>
-        青線: 期待タイミング | 点: 期待位置 | 色付き点: 実際のタップ位置 | 灰色背景: 休符拍
+        青線: 期待タイミング | 緑点: アクティブ拍 | 灰点: 休符拍 | 色付き点: 実際のタップ
       </Text>
       
       <View style={styles.legend}>
