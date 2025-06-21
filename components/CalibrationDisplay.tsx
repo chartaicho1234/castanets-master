@@ -82,7 +82,8 @@ export default function CalibrationDisplay({
       
       {gameState === 'calibration' && (
         <Text style={styles.instruction}>
-          メトロノームに合わせて8回正確にタップしてください
+          {/* カウントダウンに応じて指示を変更 */}
+          準備期間の後、メトロノーム音に合わせて8回正確にタップしてください
         </Text>
       )}
 

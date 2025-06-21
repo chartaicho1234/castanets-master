@@ -58,48 +58,82 @@ export function useGameLogic({
     return performance.now();
   }, []);
 
-  // キャリブレーション開始
+  // キャリブレーション開始（準備時間付き）
   const startCalibration = useCallback(() => {
-    console.log('🎯 キャリブレーション開始');
+    console.log('🎯 キャリブレーション開始（準備時間付き）');
     setGameState('calibration');
     setCalibrationTaps([]);
-    setCountdown(CALIBRATION_TAPS);
     
-    const startTime = getHighPrecisionTime();
-    setCalibrationStartTime(startTime);
-    let beatCount = 0;
+    // 準備時間: 3秒（3拍分）
+    const preparationBeats = 3;
+    const totalBeats = preparationBeats + CALIBRATION_TAPS;
+    let currentBeat = 0;
+    
+    setCountdown(totalBeats);
     
     console.log('キャリブレーション設定:', {
-      startTime,
-      totalTaps: CALIBRATION_TAPS,
+      preparationBeats,
+      calibrationTaps: CALIBRATION_TAPS,
+      totalBeats,
       noteLength: level.noteLength
     });
     
     const calibrationTick = () => {
-      if (beatCount >= CALIBRATION_TAPS) {
-        console.log('🎯 キャリブレーション完了 - 音声終了');
-        setGameState('idle');
-        return;
+      currentBeat++;
+      
+      if (currentBeat <= preparationBeats) {
+        // 準備期間（無音、カウントダウンのみ）
+        const remainingTotal = totalBeats - currentBeat + 1;
+        setCountdown(remainingTotal);
+        
+        console.log(`⏰ キャリブレーション準備 ${currentBeat}/${preparationBeats} (残り${remainingTotal}拍)`);
+        
+        // 準備期間中はボタンの色を変える
+        runOnJS(() => {
+          beatIndicatorScale.value = withSequence(
+            withSpring(1.1, { duration: 100 }),
+            withSpring(1, { duration: 300 })
+          );
+          beatIndicatorOpacity.value = withSequence(
+            withSpring(0.6, { duration: 100 }),
+            withSpring(0.3, { duration: 300 })
+          );
+        })();
+        
+      } else {
+        // キャリブレーション期間（音あり）
+        const calibrationBeat = currentBeat - preparationBeats;
+        const remainingBeats = CALIBRATION_TAPS - calibrationBeat + 1;
+        
+        // キャリブレーション開始時刻を記録（最初の音が鳴る時）
+        if (calibrationBeat === 1) {
+          const startTime = getHighPrecisionTime();
+          setCalibrationStartTime(startTime);
+          console.log('🎵 キャリブレーション音声開始:', { startTime });
+        }
+        
+        console.log(`🎵 キャリブレーション拍 ${calibrationBeat}/${CALIBRATION_TAPS}`);
+        playMetronomeBeep(true, calibrationBeat === 1);
+        setCountdown(remainingBeats);
+        
+        runOnJS(() => {
+          beatIndicatorScale.value = withSequence(
+            withSpring(1.4, { duration: 100 }),
+            withSpring(1, { duration: 300 })
+          );
+          beatIndicatorOpacity.value = withSequence(
+            withSpring(1, { duration: 100 }),
+            withSpring(0.3, { duration: 300 })
+          );
+        })();
       }
       
-      console.log(`🎵 キャリブレーション拍 ${beatCount + 1}/${CALIBRATION_TAPS}`);
-      playMetronomeBeep(true, beatCount % 4 === 0);
-      
-      runOnJS(() => {
-        beatIndicatorScale.value = withSequence(
-          withSpring(1.4, { duration: 100 }),
-          withSpring(1, { duration: 300 })
-        );
-        beatIndicatorOpacity.value = withSequence(
-          withSpring(1, { duration: 100 }),
-          withSpring(0.3, { duration: 300 })
-        );
-      })();
-      
-      setCountdown(CALIBRATION_TAPS - beatCount);
-      beatCount++;
-      
-      metronomeTimer.current = setTimeout(calibrationTick, level.noteLength);
+      if (currentBeat < totalBeats) {
+        metronomeTimer.current = setTimeout(calibrationTick, level.noteLength);
+      } else {
+        console.log('🎯 キャリブレーション完了 - 音声終了');
+        setGameState('idle');
+      }
     };
     
     calibrationTick();
@@ -109,6 +143,18 @@ export function useGameLogic({
   const handleCalibrationTap = useCallback(() => {
     if (gameState !== 'calibration') {
       console.log('⚠️ キャリブレーション状態ではありません:', gameState);
+      return;
+    }
+    
+    // 準備期間中のタップは無視
+    const preparationBeats = 3;
+    const totalBeats = preparationBeats + CALIBRATION_TAPS;
+    const currentPhase = totalBeats - countdown + 1;
+    
+    if (currentPhase <= preparationBeats) {
+      console.log('⚠️ 準備期間中のタップは無視されます');
+      setLastFeedback('準備期間中です。音が鳴ってからタップしてください');
+      setTimeout(() => setLastFeedback(''), 2000);
       return;
     }
     
@@ -157,7 +203,7 @@ export function useGameLogic({
       setLastFeedback(`キャリブレーション完了: ${Math.round(averageOffset)}ms`);
       setTimeout(() => setLastFeedback(''), 3000);
     }
-  }, [gameState, calibrationTaps, level.noteLength, getHighPrecisionTime, calibrationStartTime]);
+  }, [gameState, calibrationTaps, level.noteLength, getHighPrecisionTime, calibrationStartTime, countdown]);
 
   // メトロノーム開始（♪ボタン用）
   const startMetronomeOnly = useCallback(() => {

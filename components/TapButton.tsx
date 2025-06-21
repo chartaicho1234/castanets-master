@@ -39,7 +39,18 @@ export default function TapButton({
       case 'playing': return isResting ? '休符中' : 'タップ！';
       case 'paused': return 'ゲーム再開';
       case 'complete': return 'ゲーム完了';
-      case 'calibration': return `キャリブレーション\n${countdown}拍残り`;
+      case 'calibration': 
+        // キャリブレーションの準備期間を考慮
+        const calibrationPreparationBeats = 3;
+        const totalCalibrationBeats = calibrationPreparationBeats + 8; // 準備3拍 + キャリブレーション8拍
+        
+        if (countdown > 8) {
+          // 準備期間中
+          return `キャリブレーション準備中\n${countdown - 8}拍後に音が鳴ります`;
+        } else {
+          // キャリブレーション期間中
+          return `キャリブレーション\n${countdown}拍残り`;
+        }
       default: return 'ゲーム開始';
     }
   };
@@ -56,9 +67,14 @@ export default function TapButton({
         } else {
           return '#ffaa00'; // アクティブなカウントダウンは明るいオレンジ
         }
+      case 'calibration':
+        if (countdown > 8) {
+          return '#666'; // 準備期間は暗いグレー
+        } else {
+          return '#4488ff'; // アクティブなキャリブレーションは青
+        }
       case 'playing': return isResting ? '#666' : levelColor;
       case 'complete': return '#00ff88';
-      case 'calibration': return '#4488ff';
       default: return levelColor;
     }
   };
@@ -75,7 +91,12 @@ export default function TapButton({
         } else {
           return `${levelCountdownText}のカウントダウン中（1まで数えます）`;
         }
-      case 'calibration': return 'メトロノームに合わせてタップ';
+      case 'calibration': 
+        if (countdown > 8) {
+          return '3拍無音の後、メトロノーム音が鳴り始めます';
+        } else {
+          return 'メトロノームに合わせて正確にタップしてください';
+        }
       default: return null;
     }
   };
@@ -110,10 +131,15 @@ export default function TapButton({
               ? `${getButtonColor()}20` 
               : 'rgba(255, 255, 255, 0.05)',
             // 準備期間中は少し透明度を下げる
-            opacity: gameState === 'countdown' && (() => {
-              const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
-                                      levelCountdownText === '8ビート！' ? 8 : 16;
-              return countdown > preparationBeats ? 0.7 : 1.0;
+            opacity: (() => {
+              if (gameState === 'countdown') {
+                const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                        levelCountdownText === '8ビート！' ? 8 : 16;
+                return countdown > preparationBeats ? 0.7 : 1.0;
+              } else if (gameState === 'calibration') {
+                return countdown > 8 ? 0.7 : 1.0;
+              }
+              return 1.0;
             })()
           }
         ]}>
@@ -122,10 +148,15 @@ export default function TapButton({
             { 
               color: getButtonColor(),
               // 準備期間中はテキストも少し暗く
-              opacity: gameState === 'countdown' && (() => {
-                const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
-                                        levelCountdownText === '8ビート！' ? 8 : 16;
-                return countdown > preparationBeats ? 0.8 : 1.0;
+              opacity: (() => {
+                if (gameState === 'countdown') {
+                  const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                          levelCountdownText === '8ビート！' ? 8 : 16;
+                  return countdown > preparationBeats ? 0.8 : 1.0;
+                } else if (gameState === 'calibration') {
+                  return countdown > 8 ? 0.8 : 1.0;
+                }
+                return 1.0;
               })()
             }
           ]}>
@@ -139,10 +170,15 @@ export default function TapButton({
           styles.description,
           {
             // 準備期間とアクティブ期間で色を変える
-            color: gameState === 'countdown' && (() => {
-              const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
-                                      levelCountdownText === '8ビート！' ? 8 : 16;
-              return countdown > preparationBeats ? '#666' : '#888';
+            color: (() => {
+              if (gameState === 'countdown') {
+                const preparationBeats = levelCountdownText === '4ビート！' ? 4 : 
+                                        levelCountdownText === '8ビート！' ? 8 : 16;
+                return countdown > preparationBeats ? '#666' : '#888';
+              } else if (gameState === 'calibration') {
+                return countdown > 8 ? '#666' : '#888';
+              }
+              return '#888';
             })()
           }
         ]}>
