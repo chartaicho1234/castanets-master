@@ -4,6 +4,7 @@ export interface TapResult {
   timestamp: number; // タップした時刻
   targetTime: number; // 目標時刻（休符中のタップの場合は0）
   isRestTap?: boolean; // 休符中のタップかどうか
+  beatIndex?: number; // 拍のインデックス
 }
 
 export interface GameLevel {

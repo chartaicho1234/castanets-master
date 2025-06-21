@@ -371,7 +371,7 @@ export function useGameLogic({
     soundFailureCounter.current = 0;
   }, [stopAll]);
 
-  // 改善されたタップ処理（休符中のタップは記録しない）
+  // 改善されたタップ処理
   const handleTap = useCallback(() => {
     if (gameState === 'calibration') {
       handleCalibrationTap();
@@ -388,13 +388,22 @@ export function useGameLogic({
     }
     lastTapTime.current = tapTime;
     
-    // 休符中のタップ検出（フィードバックのみ、記録はしない）
+    // 休符中のタップ処理
     if (isResting) {
       setLastFeedback('休符中です！');
       setTimeout(() => setLastFeedback(''), 1000);
       
-      // 休符中のタップは結果に記録しない（グラフに表示されない）
-      console.log('休符中のタップを検出（記録せず）');
+      // 休符中のタップを記録
+      const newResult: TapResult = { 
+        timing: 'missed', 
+        deviation: 0,
+        timestamp: tapTime,
+        targetTime: 0,
+        isRestTap: true
+      };
+      
+      setResults(prev => [...prev, newResult]);
+      console.log('休符中のタップを記録');
       return;
     }
 
@@ -472,7 +481,8 @@ export function useGameLogic({
       deviation, 
       timestamp: tapTime,
       targetTime,
-      isRestTap: false
+      isRestTap: false,
+      beatIndex: bestMatch.index
     };
     
     setResults(prev => [...prev, newResult]);

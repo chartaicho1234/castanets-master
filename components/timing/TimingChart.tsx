@@ -12,34 +12,35 @@ interface TimingChartProps {
 }
 
 export default function TimingChart({ results, level, gameStartTime, expectedBeatTimes }: TimingChartProps) {
-  // アクティブ拍のタップのみを使用（休符中のタップは除外）
-  const activeTaps = results.filter(r => !r.isRestTap);
-  
   // 0秒から始まる完全なタイムラインを生成
   const totalBeats = level.segmentsPerSet * (level.activeBeatsPerSegment + level.restBeatsPerSegment);
   const beatPattern: ('active' | 'rest')[] = [];
-  const allBeatTimes: number[] = [];
   
-  // 全拍の時刻を計算（0秒から開始）
+  // 全拍のパターンを生成
   for (let segment = 0; segment < level.segmentsPerSet; segment++) {
     // アクティブ拍
     for (let i = 0; i < level.activeBeatsPerSegment; i++) {
       beatPattern.push('active');
-      const beatIndex = segment * (level.activeBeatsPerSegment + level.restBeatsPerSegment) + i;
-      allBeatTimes.push(gameStartTime + beatIndex * level.noteLength);
     }
     // 休符拍
     for (let i = 0; i < level.restBeatsPerSegment; i++) {
       beatPattern.push('rest');
-      const beatIndex = segment * (level.activeBeatsPerSegment + level.restBeatsPerSegment) + level.activeBeatsPerSegment + i;
-      allBeatTimes.push(gameStartTime + beatIndex * level.noteLength);
     }
   }
 
   const chartWidth = Math.max(width - 60, totalBeats * 50);
   const chartHeight = 120;
   
-  const maxDeviation = activeTaps.length > 0 ? Math.max(...activeTaps.map(r => Math.abs(r.deviation))) : 100;
+  // アクティブ拍のタップのみを使用（beatIndexをキーとするMap）
+  const tapMap = new Map<number, TapResult>();
+  results.filter(r => !r.isRestTap && r.beatIndex !== undefined).forEach(result => {
+    if (result.beatIndex !== undefined) {
+      tapMap.set(result.beatIndex, result);
+    }
+  });
+  
+  const maxDeviation = results.filter(r => !r.isRestTap).length > 0 ? 
+    Math.max(...results.filter(r => !r.isRestTap).map(r => Math.abs(r.deviation))) : 100;
   const displayRange = Math.max(maxDeviation, 100);
   
   const getPointColor = (timing: TapResult['timing']) => {
@@ -109,7 +110,7 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
   console.log('TimingChart Debug:', {
     totalBeats,
     activeBeatIndices: activeBeatIndices.slice(0, 10),
-    activeTapsCount: activeTaps.length,
+    tapMapSize: tapMap.size,
     expectedBeatTimesCount: expectedBeatTimes.length,
     beatPattern: beatPattern.slice(0, 16),
     gameStartTime,
@@ -154,16 +155,14 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
                 borderColor: isActive ? '#00ff88' : '#666',
               }]} />
               
-              {/* 拍番号（5拍ごとに表示） */}
-              {(beatIndex + 1) % 5 === 0 && (
-                <Text style={[styles.beatNumber, { 
-                  left: x - 8,
-                  bottom: 5,
-                  color: isActive ? '#00ff88' : '#666',
-                }]}>
-                  {beatIndex + 1}
-                </Text>
-              )}
+              {/* 拍番号（すべての拍に表示） */}
+              <Text style={[styles.beatNumber, { 
+                left: x - 8,
+                bottom: 5,
+                color: isActive ? '#00ff88' : '#666',
+              }]}>
+                {beatIndex + 1}
+              </Text>
             </View>
           );
         })}
@@ -183,28 +182,28 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
         })}
         
         {/* 実際のタップ結果（アクティブ拍のみ） */}
-        {activeTaps.map((result, tapIndex) => {
-          // タップインデックスがアクティブ拍の範囲内かチェック
-          if (tapIndex >= activeBeatIndices.length) {
-            console.warn(`タップインデックス ${tapIndex} がアクティブ拍の範囲外です (最大: ${activeBeatIndices.length - 1})`);
+        {activeBeatIndices.map((beatIndex, activeBeatIndex) => {
+          const tapResult = tapMap.get(activeBeatIndex);
+          
+          if (!tapResult) {
+            // タップが存在しない場合は何も表示しない（入力無し）
             return null;
           }
           
-          const beatIndex = activeBeatIndices[tapIndex];
           const baseX = getXPosition(beatIndex);
-          const deviationOffset = getDeviationOffset(result.deviation);
+          const deviationOffset = getDeviationOffset(tapResult.deviation);
           const actualX = baseX + deviationOffset;
           const y = chartHeight / 2;
           
           return (
-            <View key={`tap-${tapIndex}`}>
+            <View key={`tap-${activeBeatIndex}`}>
               {/* 期待位置から実際のタップ位置への横線 */}
               <View style={[styles.connectionLine, {
                 left: Math.min(baseX, actualX),
                 top: y - 1,
                 width: Math.abs(actualX - baseX),
                 height: 2,
-                backgroundColor: getPointColor(result.timing),
+                backgroundColor: getPointColor(tapResult.timing),
                 opacity: 0.6,
               }]} />
               
@@ -212,18 +211,18 @@ export default function TimingChart({ results, level, gameStartTime, expectedBea
               <View style={[styles.tapPoint, {
                 left: actualX - 6,
                 top: y - 6,
-                backgroundColor: getPointColor(result.timing),
-                borderColor: getPointColor(result.timing),
+                backgroundColor: getPointColor(tapResult.timing),
+                borderColor: getPointColor(tapResult.timing),
               }]} />
               
               {/* 偏差値表示（大きな偏差のみ） */}
-              {Math.abs(result.deviation) > 30 && (
+              {Math.abs(tapResult.deviation) > 30 && (
                 <Text style={[styles.deviationLabel, {
                   left: actualX - 20,
                   top: y + 15,
-                  color: getPointColor(result.timing),
+                  color: getPointColor(tapResult.timing),
                 }]}>
-                  {result.deviation > 0 ? '+' : ''}{Math.round(result.deviation)}ms
+                  {tapResult.deviation > 0 ? '+' : ''}{Math.round(tapResult.deviation)}ms
                 </Text>
               )}
             </View>
