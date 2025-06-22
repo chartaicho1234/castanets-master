@@ -6,7 +6,7 @@ export const QUARTER_NOTE_MS = (60 / BPM) * 1000; // 333.33ms
 export const EIGHTH_NOTE_MS = QUARTER_NOTE_MS / 2; // 166.67ms
 export const SIXTEENTH_NOTE_MS = QUARTER_NOTE_MS / 4; // 83.33ms
 
-// タイミング許容範囲（ミリ秒）- 基本値
+// タイミング許容範囲（ミリ秒）- 全レベル共通
 export const PERFECT_TOLERANCE = 25; // ±25ms
 export const GOOD_TOLERANCE = 50;    // ±50ms
 
@@ -49,28 +49,3 @@ export const LEVELS: GameLevel[] = [
     color: '#ff0088',
   },
 ];
-
-// レベルに応じた判定基準の動的調整
-export const getAdjustedTolerances = (noteLength: number) => {
-  // 16分音符の場合: 25ms÷4×1.2 = 7.5ms
-  if (noteLength === SIXTEENTH_NOTE_MS) {
-    return {
-      perfectTolerance: (PERFECT_TOLERANCE / 4) * 1.2, // 7.5ms
-      goodTolerance: (GOOD_TOLERANCE / 4) * 1.2,       // 15ms
-    };
-  }
-  
-  // 8分音符の場合: 25ms÷2×1.1 = 13.75ms
-  if (noteLength === EIGHTH_NOTE_MS) {
-    return {
-      perfectTolerance: (PERFECT_TOLERANCE / 2) * 1.1, // 13.75ms
-      goodTolerance: (GOOD_TOLERANCE / 2) * 1.1,       // 27.5ms
-    };
-  }
-  
-  // 4分音符はデフォルト: 25ms
-  return {
-    perfectTolerance: PERFECT_TOLERANCE, // 25ms
-    goodTolerance: GOOD_TOLERANCE,       // 50ms
-  };
-};

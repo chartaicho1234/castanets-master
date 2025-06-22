@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { runOnJS, withSequence, withSpring } from 'react-native-reanimated';
 import { GameState, TapResult, GameLevel, CalibrationResult } from '@/types/game';
-import { getAdjustedTolerances, CALIBRATION_TAPS } from '@/constants/gameConfig';
+import { PERFECT_TOLERANCE, GOOD_TOLERANCE, CALIBRATION_TAPS } from '@/constants/gameConfig';
 
 interface UseGameLogicProps {
   level: GameLevel;
@@ -433,7 +433,7 @@ export function useGameLogic({
     soundFailureCounter.current = 0;
   }, [stopAll]);
 
-  // 改善されたタップ処理
+  // 改善されたタップ処理（固定判定基準使用）
   const handleTap = useCallback(() => {
     if (gameState === 'calibration') {
       handleCalibrationTap();
@@ -472,8 +472,9 @@ export function useGameLogic({
       return;
     }
     
-    // レベルに応じた動的な判定基準を取得
-    const { perfectTolerance, goodTolerance } = getAdjustedTolerances(level.noteLength);
+    // 固定判定基準を使用（全レベル共通）
+    const perfectTolerance = PERFECT_TOLERANCE; // 25ms
+    const goodTolerance = GOOD_TOLERANCE;       // 50ms
     
     const searchWindow = Math.max(level.noteLength * 0.8, goodTolerance * 1.5);
     
@@ -551,13 +552,15 @@ export function useGameLogic({
     setTotalTaps(prev => prev + 1);
     setLastFeedback(feedback);
 
-    console.log('🎯 アクティブタップ処理:', {
+    console.log('🎯 アクティブタップ処理（固定判定）:', {
       beatIndex: bestMatch.index,
       rawDeviation: Math.round(rawDeviation),
       calibrationOffset: Math.round(calibrationOffset),
       finalDeviation: Math.round(deviation),
       timing,
       points,
+      perfectTolerance,
+      goodTolerance,
       targetTime: Math.round(targetTime),
       tapTime: Math.round(tapTime),
       totalResults: results.length + 1
