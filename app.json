@@ -18,7 +18,7 @@
       "baseUrl": "/castanets-master/"
     },
     "plugins": [
-      "expo-router",
+      ["expo-router", {"origin": "/castanets-master/"}],
       "expo-font",
       "expo-web-browser",
       [
