@@ -18,15 +18,14 @@
       "baseUrl": "/castanets-master/"
     },
     "plugins": [
-      ["expo-router", {"origin": "/castanets-master/"}],
-      "expo-font",
-      "expo-web-browser",
       [
         "expo-router",
         {
           "origin": "/castanets-master/"
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
