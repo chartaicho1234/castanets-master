@@ -37,6 +37,10 @@ jobs:
     
     - name: Setup Pages
       uses: actions/configure-pages@v4
+
+    - name: Fix asset paths in index.html
+      run: |
+        sed -i 's|src="/_expo/|src="/castanets-master/_expo/|g' ./dist/index.html
     
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
