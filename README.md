@@ -231,7 +231,7 @@ MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照
 - **音楽教育者の皆様** - リズム理論の指導
 - **ベータテスター** - 貴重なフィードバック
 
-## 📞 サポート・連絡先
+## 📞 サポート・連絡先　　　
 
 - **バグ報告**: [GitHub Issues](https://github.com/chartaicho1234/castanets-master/issues)
 - **機能要望**: [GitHub Discussions](https://github.com/chartaicho1234/castanets-master/discussions)
