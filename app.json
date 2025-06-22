@@ -14,7 +14,7 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
-      "baseUrl": "/castanets-master/"
+      "basePath": "castanets-master"
     },
     "plugins": [
       [
