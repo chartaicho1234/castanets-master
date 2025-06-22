@@ -15,6 +15,7 @@
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/images/favicon.png"
+      "baseUrl": "/castanets-master/"
     },
     "plugins": [
       "expo-router",
