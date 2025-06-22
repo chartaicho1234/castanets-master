@@ -20,7 +20,8 @@
       [
         "expo-router",
         {
-          "origin": "https://chartaicho1234.github.io/castanets-master/"
+          "origin": "https://chartaicho1234.github.io/castanets-master/",
+          "basePath": "/castanets-master"
         }
       ],
       "expo-font",
